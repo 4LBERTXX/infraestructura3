@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Pruebas de conexion - Infraestructura 3 (Matricula 20252241)
+# Uso: ./pruebas-conexion.sh
+ 
+GW_USUARIOS="10.22.41.1"      # FortiGate VLAN 10
+ISP="22.41.3.1"               # ISP (enlace /30 con FortiGate)
+FORTI_WAN="22.41.3.2"         # FortiGate WAN-ISP
+SERVIDOR="10.22.41.130"       # Servidor Web
+ 
+echo "=== Pruebas de conexion - $(date) ==="
+echo "Host: $(hostname)"
+ip -4 -br a
+echo
+ 
+for destino in "Gateway VLAN10:$GW_USUARIOS" "ISP:$ISP" "FortiGate WAN:$FORTI_WAN" "Servidor Web:$SERVIDOR"; do
+  nombre="${destino%%:*}"; ip="${destino##*:}"
+  if ping -c 3 -W 2 "$ip" > /dev/null 2>&1; then
+    echo "[ OK ]  Ping a $nombre ($ip)"
+  else
+    echo "[FAIL]  Ping a $nombre ($ip)"
+  fi
+done
+ 
+echo
+echo "--- Puertos del servidor ---"
+for puerto in 443 22; do
+  if timeout 5 bash -c "</dev/tcp/$SERVIDOR/$puerto" 2>/dev/null; then
+    echo "[ OK ]  Puerto $puerto abierto"
+  else
+    echo "[FAIL]  Puerto $puerto cerrado/bloqueado"
+  fi
+done
+ 
+echo
+echo "--- Traceroute al servidor ---"
+traceroute -n "$SERVIDOR" 2>/dev/null || echo "Instala traceroute: sudo apt install -y traceroute"
